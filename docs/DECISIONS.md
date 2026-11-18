@@ -7,11 +7,11 @@
 - MVP editor: Markdown textarea with preview; defer rich-text editing.
 - Subject deletion: only when empty; no archive flow in MVP.
 - Import: preview, skip matching IDs, and reject malformed input.
+- Import execution: all-or-nothing after full validation; the database restore is one transaction and assigns records to the currently authenticated owner.
 - Separate staging/test accounts are approved; Vercel deployment remains gated on release approval.
 
 ## Still to resolve privately or explicitly
 
-- Decide whether import is all-or-nothing or may report partial success. Recommendation: validate the entire backup before writing and avoid silent partial imports.
 - Recovery/contact email and owner-account provisioning method must be selected and entered only in the private account setup flow. Never commit or post the email or credentials.
 
 ## Configuration note
