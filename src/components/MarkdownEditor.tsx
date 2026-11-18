@@ -58,7 +58,7 @@ export default function MarkdownEditor({
           </Typography>
           <TextField
             multiline
-            minRows={16}
+            minRows={3}
             fullWidth
             value={value}
             onChange={(event) => onChange(event.target.value)}

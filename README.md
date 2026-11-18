@@ -4,14 +4,19 @@ A private, responsive learning notebook for saving study notes and daily reflect
 
 ## Status
 
-The app includes email/password sign-in, session persistence, owner-scoped subject/note/study-log CRUD, and versioned JSON backup export with preview-first, atomic restore. Public sign-up is not implemented. Apply both migrations in `supabase/migrations/`, including [`20261118105000_atomic_backup_import.sql`](supabase/migrations/20261118105000_atomic_backup_import.sql), before using backup restore. The migrations have not been verified against a live staging database. Do not store real learning notes until they are applied and the security checks in [`docs/03_TEST_AND_SECURITY_PLAN.md`](docs/03_TEST_AND_SECURITY_PLAN.md) pass.
+The app includes email/password sign-in, session persistence, owner-scoped subject/note/study-log CRUD, and versioned JSON backup export with preview-first, atomic restore. Subjects have a selectable color shown beside the subject name on note cards. Public sign-up is not implemented. Apply all migrations in `supabase/migrations/`, including [`20261118105000_atomic_backup_import.sql`](supabase/migrations/20261118105000_atomic_backup_import.sql) and [`20261118114000_subject_colors.sql`](supabase/migrations/20261118114000_subject_colors.sql), before using backup restore. The migrations have not been verified against a live staging database. Do not store real learning notes until they are applied and the security checks in [`docs/03_TEST_AND_SECURITY_PLAN.md`](docs/03_TEST_AND_SECURITY_PLAN.md) pass.
 
 ## Finding notes
 
 On **All notes**, combine a text search with subject and revision-status filters. **Revision list** shows only marked notes and can still be searched or filtered by subject.
 
+Note cards and Markdown previews fit their content. The Markdown editor starts compact and grows as you type.
+
+The app shows a brief confirmation after creating, editing, or deleting a note, or changing its revision status.
+
 ## Project documents
 
+- [Coding standards](AGENTS.md)
 - [Product requirements](docs/01_PRODUCT_REQUIREMENTS.md)
 - [Implementation plan](docs/02_IMPLEMENTATION_PLAN.md)
 - [QA and security test plan](docs/03_TEST_AND_SECURITY_PLAN.md)
@@ -27,8 +32,15 @@ If sign-in works but the app reports `PGRST205` for `public.subjects`, check tha
 
 1. [`20261118103000_initial_learning_schema.sql`](supabase/migrations/20261118103000_initial_learning_schema.sql) creates the tables and owner-only access policies.
 2. [`20261118105000_atomic_backup_import.sql`](supabase/migrations/20261118105000_atomic_backup_import.sql) adds backup restore.
+3. [`20261118114000_subject_colors.sql`](supabase/migrations/20261118114000_subject_colors.sql) adds subject colors and preserves them in backup restore.
 
 If the tables already exist in `public` but the Data API still reports them missing, check that `public` is an exposed schema and reload the API schema cache with `NOTIFY pgrst, 'reload schema';` in the SQL Editor. Do not grant anonymous access to fix a schema-cache error.
+
+## Note documents
+
+Expand or collapse notes individually, or use **Expand all notes** / **Collapse all notes** above the current results.
+
+**Export notes** uses the current note list (including active filters): PDF export opens the browser print dialog, where you can choose **Save as PDF**; Word export downloads an HTML-based `.doc` file that Microsoft Word can open. Import accepts JSON backups, text-based PDFs, Word `.doc` files saved as HTML, and legacy Word 97–2003 binary `.doc` files. Scanned PDFs need OCR before import; encrypted or damaged documents may not be readable. Imported document text opens in the note editor for review before saving.
 
 ## Security and release
 

@@ -27,7 +27,8 @@ vi.mock("./supabase", () => ({
   },
 }));
 
-import { createSubject } from "./learningData";
+import { createSubject, renameSubject } from "./learningData";
+import { DEFAULT_SUBJECT_COLOR, SUBJECT_COLORS } from "./subjectColors";
 
 describe("learning data ownership", () => {
   beforeEach(() => {
@@ -43,6 +44,7 @@ describe("learning data ownership", () => {
       id: "subject-1",
       user_id: "authenticated-owner",
       name: "Algorithms",
+      color: DEFAULT_SUBJECT_COLOR,
       created_at: "2026-01-01T00:00:00Z",
       updated_at: "2026-01-01T00:00:00Z",
     };
@@ -52,11 +54,31 @@ describe("learning data ownership", () => {
     expect(mocks.query.insert).toHaveBeenCalledWith({
       user_id: "authenticated-owner",
       name: "Algorithms",
+      color: DEFAULT_SUBJECT_COLOR,
     });
   });
 
   it("does not submit blank subject names", async () => {
     await expect(createSubject("  ")).rejects.toThrow("cannot be blank");
     expect(mocks.query.insert).not.toHaveBeenCalled();
+  });
+
+  it("saves a selected subject colour when editing", async () => {
+    const subject = {
+      id: "subject-1",
+      user_id: "authenticated-owner",
+      name: "Algorithms",
+      color: SUBJECT_COLORS[2].value,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    };
+    mocks.query.single.mockResolvedValue({ data: subject, error: null });
+
+    await expect(renameSubject("subject-1", " Algorithms ", SUBJECT_COLORS[2].value))
+      .resolves.toEqual(subject);
+    expect(mocks.query.update).toHaveBeenCalledWith({
+      name: "Algorithms",
+      color: SUBJECT_COLORS[2].value,
+    });
   });
 });

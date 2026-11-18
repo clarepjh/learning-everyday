@@ -1,3 +1,5 @@
+import { isArray, isBoolean, isPlainObject, isString, uniq } from "lodash-es";
+import { DEFAULT_SUBJECT_COLOR, isSubjectColor } from "./subjectColors";
 import type { Note, StudyLog, Subject } from "./learningData";
 
 export const MAX_BACKUP_BYTES = 10 * 1024 * 1024;
@@ -43,7 +45,7 @@ export function createLearningBackup(
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return isPlainObject(value);
 }
 
 function hasOnlyKeys(
@@ -54,21 +56,21 @@ function hasOnlyKeys(
 }
 
 function validDate(value: unknown): value is string {
-  if (typeof value !== "string" || !datePattern.test(value)) return false;
+  if (!isString(value) || !datePattern.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00.000Z`);
   return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
 }
 
 function validTimestamp(value: unknown): value is string {
   return (
-    typeof value === "string" &&
+    isString(value) &&
     value.length <= 40 &&
     !Number.isNaN(Date.parse(value))
   );
 }
 
 function validId(value: unknown): value is string {
-  return typeof value === "string" && uuidPattern.test(value);
+  return isString(value) && uuidPattern.test(value);
 }
 
 function validateRows<T>(
@@ -77,7 +79,7 @@ function validateRows<T>(
   validate: (row: Record<string, unknown>) => boolean,
 ): value is T[] {
   return (
-    Array.isArray(value) &&
+    isArray(value) &&
     value.length <= MAX_RECORDS_PER_TABLE &&
     value.every(
       (row) =>
@@ -88,7 +90,7 @@ function validateRows<T>(
   );
 }
 
-const subjectKeys = ["id", "name", "created_at", "updated_at"] as const;
+const subjectKeys = ["id", "name", "color", "created_at", "updated_at"] as const;
 const noteKeys = [
   "id",
   "subject_id",
@@ -144,9 +146,10 @@ export function parseLearningBackup(
     subjectKeys,
     (row) =>
       validId(row.id) &&
-      typeof row.name === "string" &&
+      isString(row.name) &&
       row.name.trim().length > 0 &&
       row.name.length <= 120 &&
+      (row.color === undefined || isSubjectColor(row.color)) &&
       validTimestamp(row.created_at) &&
       validTimestamp(row.updated_at),
   );
@@ -156,21 +159,21 @@ export function parseLearningBackup(
     (row) =>
       validId(row.id) &&
       validId(row.subject_id) &&
-      typeof row.title === "string" &&
+      isString(row.title) &&
       row.title.trim().length > 0 &&
       row.title.length <= 200 &&
-      typeof row.topic === "string" &&
+      isString(row.topic) &&
       row.topic.length <= 200 &&
-      typeof row.content_md === "string" &&
+      isString(row.content_md) &&
       row.content_md.length <= 1_000_000 &&
       (row.mistakes_md === null ||
-        (typeof row.mistakes_md === "string" &&
+        (isString(row.mistakes_md) &&
           row.mistakes_md.length <= 1_000_000)) &&
       validDate(row.learned_on) &&
-      typeof row.needs_revision === "boolean" &&
-      Array.isArray(row.tags) &&
+      isBoolean(row.needs_revision) &&
+      isArray(row.tags) &&
       row.tags.length <= 100 &&
-      row.tags.every((tag) => typeof tag === "string" && tag.length <= 100) &&
+      row.tags.every((tag) => isString(tag) && tag.length <= 100) &&
       validTimestamp(row.created_at) &&
       validTimestamp(row.updated_at),
   );
@@ -180,7 +183,7 @@ export function parseLearningBackup(
     (row) =>
       validId(row.id) &&
       validDate(row.entry_date) &&
-      typeof row.summary_md === "string" &&
+      isString(row.summary_md) &&
       row.summary_md.trim().length > 0 &&
       row.summary_md.length <= 50_000 &&
       (row.note_id === null || validId(row.note_id)) &&
@@ -197,11 +200,16 @@ export function parseLearningBackup(
   const backup: LearningBackup = {
     schemaVersion: 1,
     exportedAt: value.exportedAt,
-    subjects: value.subjects as BackupSubject[],
+    subjects: (value.subjects as Omit<BackupSubject, "color">[]).map((subject) => ({
+      ...subject,
+      color: "color" in subject && isSubjectColor(subject.color)
+        ? subject.color
+        : DEFAULT_SUBJECT_COLOR,
+    })),
     notes: value.notes as BackupNote[],
     studyLogs: value.studyLogs as BackupStudyLog[],
   };
-  const hasDuplicateIds = (ids: string[]) => ids.length !== new Set(ids).size;
+  const hasDuplicateIds = (ids: string[]) => uniq(ids).length !== ids.length;
   if (
     hasDuplicateIds(backup.subjects.map(({ id }) => id)) ||
     hasDuplicateIds(backup.notes.map(({ id }) => id)) ||

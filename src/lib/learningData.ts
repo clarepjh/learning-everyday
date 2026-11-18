@@ -9,6 +9,7 @@ import type {
   BackupImportResult,
   LearningBackup,
 } from "./backup";
+import { DEFAULT_SUBJECT_COLOR, type SubjectColor } from "./subjectColors";
 
 export type Subject = SubjectRow;
 export type Note = NoteRow;
@@ -53,14 +54,17 @@ export async function listSubjects(): Promise<Subject[]> {
   return data;
 }
 
-export async function createSubject(name: string): Promise<Subject> {
+export async function createSubject(
+  name: string,
+  color: SubjectColor = DEFAULT_SUBJECT_COLOR,
+): Promise<Subject> {
   const userId = await currentUserId();
   const normalizedName = name.trim();
   if (!normalizedName) throw new Error("Subject name cannot be blank.");
 
   const { data, error } = await client()
     .from("subjects")
-    .insert({ user_id: userId, name: normalizedName })
+    .insert({ user_id: userId, name: normalizedName, color })
     .select("*")
     .single();
   if (error) throw error;
@@ -70,6 +74,7 @@ export async function createSubject(name: string): Promise<Subject> {
 export async function renameSubject(
   id: string,
   name: string,
+  color: SubjectColor = DEFAULT_SUBJECT_COLOR,
 ): Promise<Subject> {
   const userId = await currentUserId();
   const normalizedName = name.trim();
@@ -77,7 +82,7 @@ export async function renameSubject(
 
   const { data, error } = await client()
     .from("subjects")
-    .update({ name: normalizedName })
+    .update({ name: normalizedName, color })
     .eq("id", id)
     .eq("user_id", userId)
     .select("*")

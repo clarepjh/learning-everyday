@@ -5,11 +5,13 @@ import {
   serializeLearningBackup,
 } from "./backup";
 import type { Note, StudyLog, Subject } from "./learningData";
+import { DEFAULT_SUBJECT_COLOR, SUBJECT_COLORS } from "./subjectColors";
 
 const subject: Subject = {
   id: "00000000-0000-4000-8000-000000000001",
   user_id: "owner-id",
   name: "Algorithms",
+  color: DEFAULT_SUBJECT_COLOR,
   created_at: "2026-01-01T00:00:00.000Z",
   updated_at: "2026-01-01T00:00:00.000Z",
 };
@@ -84,5 +86,30 @@ describe("learning backup", () => {
         JSON.stringify({ ...backup, notes: [backup.notes[0], backup.notes[0]] }),
       ),
     ).toThrow("duplicate record IDs");
+  });
+
+  it("preserves subject colours and defaults colours for older backups", () => {
+    const updated = {
+      ...backup,
+      subjects: [{ ...backup.subjects[0], color: SUBJECT_COLORS[2].value }],
+    };
+    expect(parseLearningBackup(JSON.stringify(updated)).subjects[0].color)
+      .toBe(SUBJECT_COLORS[2].value);
+
+    const older = {
+      ...backup,
+      subjects: [((({ color: _color, ...legacySubject }) => legacySubject)(backup.subjects[0]))],
+    };
+    expect(parseLearningBackup(JSON.stringify(older)).subjects[0].color)
+      .toBe(DEFAULT_SUBJECT_COLOR);
+  });
+
+  it("rejects unsupported subject colours", () => {
+    expect(() =>
+      parseLearningBackup(JSON.stringify({
+        ...backup,
+        subjects: [{ ...backup.subjects[0], color: "#123456" }],
+      })),
+    ).toThrow("Backup data is invalid");
   });
 });

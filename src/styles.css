@@ -216,6 +216,7 @@ textarea {
 .editor-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 16px;
 }
 
@@ -233,7 +234,6 @@ textarea {
 }
 
 .markdown-preview {
-  min-height: 402px;
   overflow-wrap: anywhere;
   color: #1d1d1d;
   line-height: 1.7;
@@ -241,6 +241,10 @@ textarea {
 
 .markdown-preview > :first-child {
   margin-top: 0;
+}
+
+.markdown-preview > :last-child {
+  margin-bottom: 0;
 }
 
 .markdown-preview a {
