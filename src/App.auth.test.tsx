@@ -82,10 +82,10 @@ describe("authenticated app shell", () => {
     const account = { id: "owner", email: "owner@example.test", app_metadata: {}, user_metadata: {}, aud: "authenticated", created_at: "" };
     const timestamps = { user_id: account.id, created_at: "", updated_at: "" };
     let notes: learningData.Note[] = [];
-    const save = vi.spyOn(learningData, "saveNote").mockImplementation(async (draft, id) => {
+    const save = vi.spyOn(learningData, "saveNote").mockImplementation((draft, id) => {
       const saved = { ...timestamps, ...draft, id: id ?? "note-id", mistakes_md: draft.mistakes_md ?? null };
       notes = [saved];
-      return saved;
+      return Promise.resolve(saved);
     });
     const spies = [
       save,
@@ -95,9 +95,12 @@ describe("authenticated app shell", () => {
         signIn: vi.fn(), signOut: vi.fn(),
       }),
       vi.spyOn(learningData, "listSubjects").mockResolvedValue([{ ...timestamps, id: "algorithms", name: "Algorithms", color: DEFAULT_SUBJECT_COLOR }]),
-      vi.spyOn(learningData, "listNotes").mockImplementation(async () => notes),
+      vi.spyOn(learningData, "listNotes").mockImplementation(() => Promise.resolve(notes)),
       vi.spyOn(learningData, "listStudyLogs").mockResolvedValue([]),
-      vi.spyOn(learningData, "deleteNote").mockImplementation(async () => { notes = []; }),
+      vi.spyOn(learningData, "deleteNote").mockImplementation(() => {
+        notes = [];
+        return Promise.resolve();
+      }),
     ];
 
     try {

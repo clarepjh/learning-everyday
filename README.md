@@ -26,6 +26,8 @@ The app shows a brief confirmation after creating, editing, or deleting a note, 
 
 ## Local configuration
 
+Use Node.js 22.16+ (22.x) or 24+. Run `npm ci` to install dependencies and `npm run lint` to check frontend TypeScript and the Vite config. ESLint uses the recommended type-aware TypeScript rules and fails on warnings.
+
 Copy `.env.example` to `.env.local` and fill in the Supabase project URL and publishable key locally. `.env.local` is ignored by Git. Vite reads client-side variables prefixed with `VITE_`; never put a Supabase secret/service-role key, database password, or other credential in frontend configuration. Publishable keys are not authorization: enforce and test RLS on every private table before exposing data.
 
 If sign-in works but the app reports `PGRST205` for `public.subjects`, check that the Supabase Dashboard project matches `VITE_SUPABASE_URL`. In that project's SQL Editor, apply the migrations that are not already installed, in order:

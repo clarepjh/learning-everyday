@@ -48,7 +48,7 @@ export default function LoginPage() {
         <Typography color="text.secondary" sx={{ mb: 3 }}>
           Sign in to your private learning space.
         </Typography>
-        <Stack component="form" spacing={2} onSubmit={handleSubmit}>
+        <Stack component="form" spacing={2} onSubmit={(event) => void handleSubmit(event)}>
           {configurationError && <Alert severity="error">{configurationError}</Alert>}
           {initializationError && <Alert severity="error">{initializationError}</Alert>}
           {error && <Alert severity="error">{error}</Alert>}

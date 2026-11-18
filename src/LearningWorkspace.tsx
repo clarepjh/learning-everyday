@@ -305,9 +305,30 @@ export function LearningWorkspace() {
     }
   }
 
-  async function removeSubject(subject: Subject) {
+  function removeSubject(subject: Subject) {
     if (some(notes, { subject_id: subject.id })) return;
     setConfirmDelete({ kind: "subject", value: subject });
+  }
+
+  async function toggleNoteRevision(note: Note) {
+    try {
+      await saveNote({
+        subject_id: note.subject_id,
+        title: note.title,
+        topic: note.topic,
+        content_md: note.content_md,
+        mistakes_md: note.mistakes_md,
+        learned_on: note.learned_on,
+        needs_revision: !note.needs_revision,
+        tags: note.tags,
+      }, note.id);
+      await refresh();
+      showNoteToast(
+        note.needs_revision ? "Note removed from revision list." : "Note added to revision list.",
+      );
+    } catch (reason) {
+      setError(messageOf(reason));
+    }
   }
 
   const clearNoteFilters = () => {
@@ -406,7 +427,7 @@ export function LearningWorkspace() {
             setSubjectDraft({ name: subject.name, color: subject.color });
             setSubjectDialog(true);
           }}
-          onDelete={(subject) => void removeSubject(subject)}
+          onDelete={removeSubject}
         />
       ) : page === "Study log" ? (
         <StudyLogView
@@ -446,26 +467,7 @@ export function LearningWorkspace() {
           onCreate={openNewNote}
           onEdit={openEditNote}
           onDelete={(note) => setConfirmDelete({ kind: "note", value: note })}
-          onToggleRevision={async (note) => {
-            try {
-              await saveNote({
-                subject_id: note.subject_id,
-                title: note.title,
-                topic: note.topic,
-                content_md: note.content_md,
-                mistakes_md: note.mistakes_md,
-                learned_on: note.learned_on,
-                needs_revision: !note.needs_revision,
-                tags: note.tags,
-              }, note.id);
-              await refresh();
-              showNoteToast(
-                note.needs_revision ? "Note removed from revision list." : "Note added to revision list.",
-              );
-            } catch (reason) {
-              setError(messageOf(reason));
-            }
-          }}
+          onToggleRevision={(note) => void toggleNoteRevision(note)}
           onExportNotes={(format) => exportNotes(format, filteredNotes)}
         />
       )}

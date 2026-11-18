@@ -21,7 +21,7 @@ vi.mock("@file-viewer/doc", () => ({
 function createFile(contents: string, name: string, type = ""): File {
   const file = new File([contents], name, { type });
   Object.defineProperty(file, "arrayBuffer", {
-    value: async () => new TextEncoder().encode(contents).buffer,
+    value: () => Promise.resolve(new TextEncoder().encode(contents).buffer),
   });
   return file;
 }
@@ -69,8 +69,8 @@ describe("document import", () => {
     getDocumentMock.mockReturnValueOnce({
       promise: Promise.resolve({
         numPages: 1,
-        getPage: async () => ({
-          getTextContent: async () => ({
+        getPage: () => Promise.resolve({
+          getTextContent: () => Promise.resolve({
             items: [{ str: "Extracted lesson text", hasEOL: true }],
           }),
           cleanup: vi.fn(),
