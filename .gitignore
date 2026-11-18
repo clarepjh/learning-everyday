@@ -1,0 +1,10 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+.vercel/
+
+# Local secrets and environment configuration
+.env
+.env.*
+!.env.example
