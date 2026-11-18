@@ -6,6 +6,10 @@ A private, responsive learning notebook for saving study notes and daily reflect
 
 The app includes email/password sign-in, session persistence, owner-scoped subject/note/study-log CRUD, and versioned JSON backup export with preview-first, atomic restore. Public sign-up is not implemented. Apply both migrations in `supabase/migrations/`, including [`20261118105000_atomic_backup_import.sql`](supabase/migrations/20261118105000_atomic_backup_import.sql), before using backup restore. The migrations have not been verified against a live staging database. Do not store real learning notes until they are applied and the security checks in [`docs/03_TEST_AND_SECURITY_PLAN.md`](docs/03_TEST_AND_SECURITY_PLAN.md) pass.
 
+## Finding notes
+
+On **All notes**, combine a text search with subject and revision-status filters. **Revision list** shows only marked notes and can still be searched or filtered by subject.
+
 ## Project documents
 
 - [Product requirements](docs/01_PRODUCT_REQUIREMENTS.md)

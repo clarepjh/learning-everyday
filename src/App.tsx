@@ -142,6 +142,12 @@ function DataApp() {
   } | null>(null);
   const backupInput = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState("");
+  const [subjectFilter, setSubjectFilter] = useState("");
+  const [revisionFilter, setRevisionFilter] = useState("");
+  const activeSubject = subjects.some((subject) => subject.id === subjectFilter)
+    ? subjectFilter
+    : "";
+  const hasNoteFilters = Boolean(search.trim() || activeSubject || revisionFilter);
   const [noteDialog, setNoteDialog] = useState(false);
   const [noteDraft, setNoteDraft] = useState<NoteInput>(emptyNote());
   const [editingNote, setEditingNote] = useState<Note | null>(null);
@@ -251,20 +257,23 @@ function DataApp() {
 
   const filteredNotes = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
+    const date = today();
     return notes.filter((note) => {
       if (page === "Revision list" && !note.needs_revision) return false;
-      if (page === "Today" && note.learned_on !== today()) return false;
+      if (page === "Today" && note.learned_on !== date) return false;
+      if (activeSubject && note.subject_id !== activeSubject) return false;
+      if (revisionFilter && note.needs_revision !== (revisionFilter === "marked")) return false;
       if (!query) return true;
       return [note.title, note.topic, note.content_md, note.mistakes_md ?? "", ...note.tags]
         .join(" ")
         .toLocaleLowerCase()
         .includes(query);
     });
-  }, [notes, page, search]);
+  }, [notes, page, search, activeSubject, revisionFilter]);
 
   const openNewNote = () => {
     setEditingNote(null);
-    setNoteDraft(emptyNote(subjects[0]?.id ?? ""));
+    setNoteDraft(emptyNote(activeSubject || subjects[0]?.id || ""));
     setNoteDialog(true);
   };
 
@@ -357,10 +366,16 @@ function DataApp() {
     setConfirmDelete({ kind: "subject", value: subject });
   }
 
+  const clearNoteFilters = () => {
+    setSearch("");
+    setSubjectFilter("");
+    setRevisionFilter("");
+  };
+
   const openPage = (nextPage: string) => {
+    if (nextPage !== page) clearNoteFilters();
     setPage(nextPage);
     setMobileOpen(false);
-    setSearch("");
   };
 
   const sidebar = (
@@ -465,16 +480,6 @@ function DataApp() {
               aria-label="Choose a JSON backup"
               onChange={(event) => void selectBackup(event)}
             />
-            {page !== "Study log" && page !== "Subjects" && (
-              <TextField
-                size="small"
-                placeholder="Search notes"
-                aria-label="Search notes"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                sx={{ width: { xs: 145, sm: 220 } }}
-              />
-            )}
             <Button
               color="inherit"
               aria-label="Sign out"
@@ -543,6 +548,54 @@ function DataApp() {
                 page={page}
                 notes={filteredNotes}
                 subjects={subjects}
+                filtersActive={hasNoteFilters}
+                onClearFilters={clearNoteFilters}
+                filters={
+                  <Stack
+                    role="search"
+                    aria-label="Find notes"
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={2}
+                  >
+                    <TextField
+                      type="search"
+                      size="small"
+                      label="Search notes"
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                      fullWidth
+                    />
+                    <TextField
+                      select
+                      size="small"
+                      label="Filter by subject"
+                      value={activeSubject}
+                      onChange={(event) => setSubjectFilter(event.target.value)}
+                      slotProps={{ select: { native: true } }}
+                      fullWidth
+                    >
+                      <option value="">All subjects</option>
+                      {subjects.map((subject) => (
+                        <option key={subject.id} value={subject.id}>{subject.name}</option>
+                      ))}
+                    </TextField>
+                    {page !== "Revision list" && (
+                      <TextField
+                        select
+                        size="small"
+                        label="Revision status"
+                        value={revisionFilter}
+                        onChange={(event) => setRevisionFilter(event.target.value)}
+                        slotProps={{ select: { native: true } }}
+                        fullWidth
+                      >
+                        <option value="">Any status</option>
+                        <option value="marked">Marked for revision</option>
+                        <option value="unmarked">Not marked</option>
+                      </TextField>
+                    )}
+                  </Stack>
+                }
                 onCreate={openNewNote}
                 onEdit={openEditNote}
                 onDelete={(note) => setConfirmDelete({ kind: "note", value: note })}
@@ -830,6 +883,9 @@ function NotesView({
   page,
   notes,
   subjects,
+  filtersActive,
+  onClearFilters,
+  filters,
   onCreate,
   onEdit,
   onDelete,
@@ -838,6 +894,9 @@ function NotesView({
   page: string;
   notes: Note[];
   subjects: Subject[];
+  filtersActive: boolean;
+  onClearFilters: () => void;
+  filters: ReactNode;
   onCreate: () => void;
   onEdit: (note: Note) => void;
   onDelete: (note: Note) => void;
@@ -869,6 +928,13 @@ function NotesView({
       />
       {!subjects.length && (
         <Alert severity="info">Create a subject first to start saving notes.</Alert>
+      )}
+      {filters}
+      {filtersActive && (
+        <Stack direction="row" spacing={2} alignItems="center">
+          <Typography role="status">{notes.length} matching {notes.length === 1 ? "note" : "notes"}</Typography>
+          <Button onClick={onClearFilters}>Clear filters</Button>
+        </Stack>
       )}
       {notes.length ? (
         <Stack spacing={2}>
@@ -921,6 +987,8 @@ function NotesView({
             );
           })}
         </Stack>
+      ) : filtersActive ? (
+        <Alert severity="info">No notes match. Try a different search or clear the filters.</Alert>
       ) : (
         <Paper variant="outlined" className="empty-state">
           <Box className="empty-state-icon"><LocalLibraryOutlinedIcon color="primary" /></Box>
